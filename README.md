@@ -101,7 +101,7 @@ export default { fetch: router.fetch.bind(router) };
 
 ## Skills
 
-8 minimal skills in `/skills/` — guides, not code:
+9 minimal skills in `/skills/` — guides, not code:
 
 | Skill | Description |
 |-------|-------------|
@@ -113,6 +113,7 @@ export default { fetch: router.fetch.bind(router) };
 | `protocols` | MCP + x402 integrations |
 | `devops` | Testing + deployment |
 | `static-assets` | Serve static files |
+| `queues` | Race condition prevention via Cloudflare Queues |
 
 ---
 
