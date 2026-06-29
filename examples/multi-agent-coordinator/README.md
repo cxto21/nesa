@@ -2,7 +2,7 @@
 
 A Nesa example: coordinate multiple AI agents to complete complex tasks.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cxto21/Parina-Framework/tree/main/nesa/examples/multi-agent-coordinator)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cxto21/nesa/tree/main/examples/multi-agent-coordinator)
 
 ## What It Does
 

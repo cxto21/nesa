@@ -4,7 +4,7 @@
 
 *Inspired by Parina PHP. Built fresh for the edge.*
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cxto21/Parina-Framework/tree/main/nesa)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cxto21/nesa)
 
 ---
 
@@ -122,7 +122,7 @@ Ready-to-deploy example apps:
 
 | Example | Description | Deploy |
 |---------|-------------|--------|
-| [Multi-Agent Coordinator](examples/multi-agent-coordinator/) | Coordinate multiple AI agents to complete complex tasks | [![Deploy](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cxto21/Parina-Framework/tree/main/nesa/examples/multi-agent-coordinator) |
+| [Multi-Agent Coordinator](examples/multi-agent-coordinator/) | Coordinate multiple AI agents to complete complex tasks | [![Deploy](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cxto21/nesa/tree/main/examples/multi-agent-coordinator) |
 
 ---
 
