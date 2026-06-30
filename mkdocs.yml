@@ -58,6 +58,10 @@ nav:
     - Home: handlers/home.md
     - Health: handlers/health.md
     - Agent Tools: handlers/agent-tools.md
+  - Architecture: architecture.md
+  - Conventions: conventions.md
+  - Roadmap: roadmap.md
+  - Decisions: decisions/README.md
   - Examples:
     - Multi-Agent Coordinator: examples/multi-agent-coordinator.md
     - Workers AI: examples/workers-ai.md
