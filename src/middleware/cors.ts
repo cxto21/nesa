@@ -18,6 +18,15 @@ export function cors(
     });
   }
 
-  // For other methods, add CORS headers to response via finally hook
-  // (handled in router.ts)
+  // For other methods, add CORS headers via addCorsHeaders() in your handler
+}
+
+// Helper: Add CORS headers to a response (explicit, no magic)
+// Usage: return addCorsHeaders(Response.json({ data }));
+export function addCorsHeaders(response: Response): Response {
+  const newResponse = new Response(response.body, response);
+  newResponse.headers.set('Access-Control-Allow-Origin', '*');
+  newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Agent');
+  return newResponse;
 }
