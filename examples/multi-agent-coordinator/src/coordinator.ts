@@ -1,13 +1,12 @@
 // Coordinator Core — Agent Registry + Task Engine
-// Uses KV for persistent state (survives cold starts locally and in production)
+// KV for tasks (shared state), Durable Objects for agents (per-agent state)
 
 import type { Agent, Task, Subtask, Env } from './types';
 
 // ─── KV Keys ──────────────────────────────────────────────
-const AGENTS_KEY = 'agents';
 const TASKS_KEY = 'tasks';
 
-// ─── Helpers ──────────────────────────────────────────────
+// ─── KV Helpers ──────────────────────────────────────────
 async function loadMap<T>(env: Env, key: string): Promise<Map<string, T>> {
   const data = await env.STATE.get(key, 'json');
   if (!data) return new Map();
@@ -19,60 +18,98 @@ async function saveMap<T>(env: Env, key: string, map: Map<string, T>): Promise<v
   await env.STATE.put(key, JSON.stringify(obj));
 }
 
-// ─── Agent Registry ───────────────────────────────────────
+// ─── Agent Registry (via Durable Objects) ─────────────────
 
 export async function registerAgent(env: Env, data: {
   name: string;
   role: string;
   capabilities: string[];
 }): Promise<Agent> {
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
-  const id = crypto.randomUUID();
-  const now = Date.now();
+  // Create a Durable Object for this agent
+  const agentId = env.AgentDO.idFromName(data.name);
+  const stub = env.AgentDO.get(agentId) as any;
 
-  const agent: Agent = {
-    id,
+  // Register via callable method
+  const result = await stub.register({
     name: data.name,
     role: data.role,
     capabilities: data.capabilities,
-    status: 'idle',
-    registeredAt: now,
-    lastSeen: now,
-  };
+  });
 
-  agents.set(id, agent);
-  await saveMap(env, AGENTS_KEY, agents);
-  return agent;
+  return result;
 }
 
 export async function getAgent(env: Env, id: string): Promise<Agent | undefined> {
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
-  return agents.get(id);
-}
+  // Try to find agent by name (since DO id is name-based)
+  const agentId = env.AgentDO.idFromName(id);
+  const stub = env.AgentDO.get(agentId) as any;
 
-export async function getAgentsByRole(env: Env, role: string): Promise<Agent[]> {
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
-  return Array.from(agents.values()).filter(
-    a => a.role === role && a.status === 'idle',
-  );
-}
-
-export async function getAllAgents(env: Env): Promise<Agent[]> {
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
-  return Array.from(agents.values());
-}
-
-export async function updateAgentStatus(env: Env, id: string, status: Agent['status']): Promise<void> {
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
-  const agent = agents.get(id);
-  if (agent) {
-    agent.status = status;
-    agent.lastSeen = Date.now();
-    await saveMap(env, AGENTS_KEY, agents);
+  try {
+    const result = await stub.getState();
+    return result || undefined;
+  } catch {
+    return undefined;
   }
 }
 
-// ─── Task Engine ──────────────────────────────────────────
+export async function getAgentByName(env: Env, name: string): Promise<Agent | undefined> {
+  const agentId = env.AgentDO.idFromName(name);
+  const stub = env.AgentDO.get(agentId) as any;
+
+  try {
+    const result = await stub.getState();
+    return result || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function getAgentsByRole(env: Env, role: string): Promise<Agent[]> {
+  // For now, we need to scan agents — in production, use KV index
+  // This is a limitation of DO-based state
+  const allAgents = await getAllAgents(env);
+  return allAgents.filter(a => a.role === role && a.status === 'idle');
+}
+
+export async function getAllAgents(env: Env): Promise<Agent[]> {
+  // Get all agent names from KV index
+  const indexData = await env.STATE.get('agent-index', 'json');
+  if (!indexData) return [];
+
+  const agentNames = indexData as string[];
+  const agents: Agent[] = [];
+
+  for (const name of agentNames) {
+    const agentId = env.AgentDO.idFromName(name);
+    const stub = env.AgentDO.get(agentId) as any;
+
+    try {
+      const state = await stub.getState();
+      if (state) agents.push(state);
+    } catch {
+      // Skip invalid agents
+    }
+  }
+
+  return agents;
+}
+
+export async function updateAgentStatus(env: Env, id: string, status: Agent['status']): Promise<void> {
+  const agentId = env.AgentDO.idFromName(id);
+  const stub = env.AgentDO.get(agentId) as any;
+
+  await stub.updateStatus(status);
+
+  // Update KV index
+  const indexData = await env.STATE.get('agent-index', 'json');
+  const agentNames = (indexData as string[]) ?? [];
+  if (!agentNames.includes(id)) {
+    agentNames.push(id);
+    await env.STATE.put('agent-index', JSON.stringify(agentNames));
+  }
+}
+
+// ─── Task Engine (KV-based, shared state) ─────────────────
 
 export async function createTask(env: Env, data: {
   title: string;
@@ -123,10 +160,10 @@ export async function getAllTasks(env: Env): Promise<Task[]> {
 
 // Assign a subtask to an agent
 export async function assignSubtask(env: Env, subtaskId: string, agentId: string): Promise<boolean> {
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
   const tasks = await loadMap<Task>(env, TASKS_KEY);
 
-  const agent = agents.get(agentId);
+  // Get agent via DO
+  const agent = await getAgent(env, agentId);
   if (!agent || agent.status !== 'idle') return false;
 
   for (const task of tasks.values()) {
@@ -134,10 +171,13 @@ export async function assignSubtask(env: Env, subtaskId: string, agentId: string
     if (subtask && subtask.status === 'pending') {
       subtask.assignedTo = agentId;
       subtask.status = 'assigned';
-      agent.status = 'working';
       task.status = 'assigned';
 
-      await saveMap(env, AGENTS_KEY, agents);
+      // Update agent state via DO
+      const agentDOId = env.AgentDO.idFromName(agentId);
+      const stub = env.AgentDO.get(agentDOId) as any;
+      await stub.assignTask(task.id, subtaskId);
+
       await saveMap(env, TASKS_KEY, tasks);
       return true;
     }
@@ -148,7 +188,6 @@ export async function assignSubtask(env: Env, subtaskId: string, agentId: string
 // Submit result for a subtask
 export async function submitResult(env: Env, subtaskId: string, result: string): Promise<boolean> {
   const tasks = await loadMap<Task>(env, TASKS_KEY);
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
 
   for (const task of tasks.values()) {
     const subtask = task.subtasks.find(st => st.id === subtaskId);
@@ -157,13 +196,11 @@ export async function submitResult(env: Env, subtaskId: string, result: string):
       subtask.status = 'completed';
       subtask.completedAt = Date.now();
 
-      // Free the agent
+      // Free the agent via DO
       if (subtask.assignedTo) {
-        const agent = agents.get(subtask.assignedTo);
-        if (agent) {
-          agent.status = 'idle';
-          agent.lastSeen = Date.now();
-        }
+        const agentDOId = env.AgentDO.idFromName(subtask.assignedTo);
+        const stub = env.AgentDO.get(agentDOId) as any;
+        await stub.completeTask(result);
       }
 
       // Check if all subtasks are done
@@ -177,7 +214,6 @@ export async function submitResult(env: Env, subtaskId: string, result: string):
       }
 
       await saveMap(env, TASKS_KEY, tasks);
-      await saveMap(env, AGENTS_KEY, agents);
       return true;
     }
   }
@@ -186,7 +222,6 @@ export async function submitResult(env: Env, subtaskId: string, result: string):
 
 // Auto-assign pending subtasks to available agents
 export async function autoAssign(env: Env): Promise<Array<{ subtask: Subtask; agent: Agent }>> {
-  const agents = await loadMap<Agent>(env, AGENTS_KEY);
   const tasks = await loadMap<Task>(env, TASKS_KEY);
   const assignments: Array<{ subtask: Subtask; agent: Agent }> = [];
 
@@ -196,27 +231,58 @@ export async function autoAssign(env: Env): Promise<Array<{ subtask: Subtask; ag
     for (const subtask of task.subtasks) {
       if (subtask.status !== 'pending') continue;
 
-      const available = Array.from(agents.values()).filter(
-        a => a.role === subtask.role && a.status === 'idle',
-      );
-
+      const available = await getAgentsByRole(env, subtask.role);
       if (available.length > 0) {
         const agent = available[0];
         subtask.assignedTo = agent.id;
         subtask.status = 'assigned';
-        agent.status = 'working';
         task.status = 'assigned';
+
+        // Update agent via DO
+        const agentDOId = env.AgentDO.idFromName(agent.id);
+        const stub = env.AgentDO.get(agentDOId) as any;
+        await stub.assignTask(task.id, subtask.id);
+
         assignments.push({ subtask, agent });
       }
     }
   }
 
   if (assignments.length > 0) {
-    await saveMap(env, AGENTS_KEY, agents);
     await saveMap(env, TASKS_KEY, tasks);
   }
 
   return assignments;
+}
+
+// ─── Sub-Agent Support ──────────────────────────────────
+
+export async function spawnSubAgent(env: Env, parentId: string, data: {
+  name: string;
+  role: string;
+  capabilities: string[];
+}): Promise<Agent> {
+  const parentDOId = env.AgentDO.idFromName(parentId);
+  const stub = env.AgentDO.get(parentDOId) as any;
+
+  const subAgent = await stub.spawnSubAgent(data);
+
+  // Add to agent index
+  const indexData = await env.STATE.get('agent-index', 'json');
+  const agentNames = (indexData as string[]) ?? [];
+  if (!agentNames.includes(subAgent.name)) {
+    agentNames.push(subAgent.name);
+    await env.STATE.put('agent-index', JSON.stringify(agentNames));
+  }
+
+  return subAgent;
+}
+
+export async function getSubAgents(env: Env, parentId: string): Promise<Agent[]> {
+  const agentDOId = env.AgentDO.idFromName(parentId);
+  const stub = env.AgentDO.get(agentDOId) as any;
+
+  return await stub.getSubAgents();
 }
 
 // ─── Stats ────────────────────────────────────────────────

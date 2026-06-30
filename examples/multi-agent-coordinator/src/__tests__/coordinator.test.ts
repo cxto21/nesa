@@ -29,12 +29,112 @@ function createMockKV() {
   } as unknown as KVNamespace;
 }
 
+// Mock Durable Object namespace
+function createMockDO(kv: KVNamespace) {
+  const agents = new Map<string, any>();
+
+  return {
+    idFromName: (name: string) => ({ toString: () => name, name }),
+    get: (id: any) => ({
+      register: async (data: any) => {
+        const agent = {
+          id: id.name || id.toString(),
+          name: data.name,
+          role: data.role,
+          capabilities: data.capabilities || [],
+          status: 'idle',
+          registeredAt: Date.now(),
+          lastSeen: Date.now(),
+          parentId: data.parentId || null,
+          subAgents: [],
+          currentTask: null,
+          result: null,
+        };
+        agents.set(agent.id, agent);
+
+        // Maintain KV index
+        const indexData = await kv.get('agent-index', 'json');
+        const agentNames = (indexData as string[]) ?? [];
+        if (!agentNames.includes(agent.name)) {
+          agentNames.push(agent.name);
+          await kv.put('agent-index', JSON.stringify(agentNames));
+        }
+
+        return agent;
+      },
+      getState: async () => agents.get(id.name || id.toString()),
+      updateStatus: async (status: string) => {
+        const agent = agents.get(id.name || id.toString());
+        if (agent) {
+          agent.status = status;
+          agent.lastSeen = Date.now();
+        }
+      },
+      assignTask: async (taskId: string, subtaskId: string) => {
+        const agent = agents.get(id.name || id.toString());
+        if (agent) {
+          agent.currentTask = `${taskId}:${subtaskId}`;
+          agent.status = 'working';
+          agent.lastSeen = Date.now();
+        }
+      },
+      completeTask: async (result: string) => {
+        const agent = agents.get(id.name || id.toString());
+        if (agent) {
+          agent.currentTask = null;
+          agent.result = result;
+          agent.status = 'idle';
+          agent.lastSeen = Date.now();
+        }
+      },
+      spawnSubAgent: async (data: any) => {
+        const subAgent = {
+          id: `sub-${id.name || id.toString()}-${data.name}`,
+          name: data.name,
+          role: data.role,
+          capabilities: data.capabilities || [],
+          status: 'idle',
+          registeredAt: Date.now(),
+          lastSeen: Date.now(),
+          parentId: id.name || id.toString(),
+          subAgents: [],
+          currentTask: null,
+          result: null,
+        };
+        agents.set(subAgent.id, subAgent);
+
+        // Add to parent's subAgents list
+        const parent = agents.get(id.name || id.toString());
+        if (parent) {
+          parent.subAgents.push(subAgent.id);
+        }
+
+        // Maintain KV index for sub-agent
+        const indexData = await kv.get('agent-index', 'json');
+        const agentNames = (indexData as string[]) ?? [];
+        if (!agentNames.includes(subAgent.name)) {
+          agentNames.push(subAgent.name);
+          await kv.put('agent-index', JSON.stringify(agentNames));
+        }
+
+        return subAgent;
+      },
+      getSubAgents: async () => {
+        const parent = agents.get(id.name || id.toString());
+        if (!parent) return [];
+        return parent.subAgents.map((subId: string) => agents.get(subId)).filter(Boolean);
+      },
+    }),
+  } as unknown as DurableObjectNamespace;
+}
+
 describe('Coordinator', () => {
-  let env: { STATE: KVNamespace; LOGS: KVNamespace };
+  let env: { STATE: KVNamespace; LOGS: KVNamespace; AgentDO: DurableObjectNamespace };
 
   beforeEach(() => {
     const logsKV = createMockKV();
-    env = { STATE: createMockKV(), LOGS: logsKV };
+    const stateKV = createMockKV();
+    env = { STATE: stateKV, LOGS: logsKV, AgentDO: createMockDO(stateKV) };
   });
 
   describe('Agent Registry', () => {

@@ -1,6 +1,7 @@
 name = "nesa-coordinator"
 main = "src/index.ts"
 compatibility_date = "2024-09-25"
+compatibility_flags = ["nodejs_compat"]
 
 # KV for persistent state (local simulation via Miniflare)
 [[kv_namespaces]]
@@ -12,6 +13,17 @@ id = "nesa-coordinator-state"
 binding = "LOGS"
 id = "nesa-coordinator-logs"
 
+# Durable Object — Agent state + WebSocket + scheduling
+[durable_objects]
+bindings = [
+  { name = "AgentDO", class_name = "AgentDO" }
+]
+
+# Durable Object migrations
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AgentDO"]
+
 # For production, uncomment and set your namespace IDs:
 # [[kv_namespaces]]
 # binding = "STATE"
@@ -19,3 +31,7 @@ id = "nesa-coordinator-logs"
 # [[kv_namespaces]]
 # binding = "LOGS"
 # id = "your-logs-namespace-id"
+# [[durable_objects]]
+# bindings = [
+#   { name = "AgentDO", class_name = "AgentDO" }
+# ]

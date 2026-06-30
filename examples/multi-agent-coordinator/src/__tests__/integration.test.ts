@@ -17,6 +17,68 @@ function createMockKV() {
   } as unknown as KVNamespace;
 }
 
+// Mock Durable Object namespace
+function createMockDO(kv: KVNamespace) {
+  const agents = new Map<string, any>();
+
+  return {
+    idFromName: (name: string) => ({ toString: () => name, name }),
+    get: (id: any) => ({
+      register: async (data: any) => {
+        const agent = {
+          id: id.name || id.toString(),
+          name: data.name,
+          role: data.role,
+          capabilities: data.capabilities || [],
+          status: 'idle',
+          registeredAt: Date.now(),
+          lastSeen: Date.now(),
+          parentId: data.parentId || null,
+          subAgents: [],
+          currentTask: null,
+          result: null,
+        };
+        agents.set(agent.id, agent);
+
+        // Maintain KV index
+        const indexData = await kv.get('agent-index', 'json');
+        const agentNames = (indexData as string[]) ?? [];
+        if (!agentNames.includes(agent.name)) {
+          agentNames.push(agent.name);
+          await kv.put('agent-index', JSON.stringify(agentNames));
+        }
+
+        return agent;
+      },
+      getState: async () => agents.get(id.name || id.toString()),
+      updateStatus: async (status: string) => {
+        const agent = agents.get(id.name || id.toString());
+        if (agent) {
+          agent.status = status;
+          agent.lastSeen = Date.now();
+        }
+      },
+      assignTask: async (taskId: string, subtaskId: string) => {
+        const agent = agents.get(id.name || id.toString());
+        if (agent) {
+          agent.currentTask = `${taskId}:${subtaskId}`;
+          agent.status = 'working';
+          agent.lastSeen = Date.now();
+        }
+      },
+      completeTask: async (result: string) => {
+        const agent = agents.get(id.name || id.toString());
+        if (agent) {
+          agent.currentTask = null;
+          agent.result = result;
+          agent.status = 'idle';
+          agent.lastSeen = Date.now();
+        }
+      },
+    }),
+  } as unknown as DurableObjectNamespace;
+}
+
 // Mock ExecutionContext
 function createMockContext() {
   const waitUntilPromises: Promise<any>[] = [];
@@ -29,12 +91,14 @@ function createMockContext() {
 }
 
 describe('Multi-Agent Coordinator API', () => {
-  let env: { STATE: KVNamespace; LOGS: KVNamespace };
+  let env: { STATE: KVNamespace; LOGS: KVNamespace; AgentDO: DurableObjectNamespace };
 
   beforeEach(() => {
+    const stateKV = createMockKV();
     env = {
-      STATE: createMockKV(),
+      STATE: stateKV,
       LOGS: createMockKV(),
+      AgentDO: createMockDO(stateKV),
     };
   });
 

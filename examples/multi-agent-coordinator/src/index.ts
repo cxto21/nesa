@@ -21,6 +21,8 @@ import { chatUI, send, messages } from './handlers/chat';
 import { robots } from './handlers/robots';
 import { llms } from './handlers/llms';
 import { sitemap } from './handlers/sitemap';
+import { agentWebSocket, callAgent } from './handlers/ws';
+import { spawn, listSubAgents } from './handlers/subagents';
 
 // Router
 const router = Router({
@@ -52,6 +54,12 @@ router.post('/chat/send', send);
 router.post('/agents/register', register);
 router.get('/agents', listAgents);
 router.post('/agents/:id/heartbeat', heartbeat);
+
+// ─── Agent Durable Object ───────────────────────────────
+router.get('/ws/agent/:id', agentWebSocket);
+router.post('/agents/:id/call', callAgent);
+router.post('/agents/:id/spawn', spawn);
+router.get('/agents/:id/subagents', listSubAgents);
 
 // ─── Tasks ──────────────────────────────────────────────
 router.post('/tasks/create', create);

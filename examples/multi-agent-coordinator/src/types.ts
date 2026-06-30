@@ -4,6 +4,7 @@
 export interface Env {
   STATE: KVNamespace;  // Local simulation via Miniflare
   LOGS: KVNamespace;   // Interaction logs (falls back to STATE)
+  AgentDO: DurableObjectNamespace;  // Agent Durable Object
 }
 
 // ─── Agent ──────────────────────────────────────────────
@@ -15,6 +16,38 @@ export interface Agent {
   status: 'idle' | 'working' | 'offline';
   registeredAt: number;
   lastSeen: number;
+  // Sub-agent support
+  parentId: string | null;
+  subAgents: string[];
+  // Task context
+  currentTask: string | null;
+  result: string | null;
+}
+
+// ─── Durable Object Types ──────────────────────────────
+export interface AgentDOState {
+  id: string;
+  name: string;
+  role: string;
+  capabilities: string[];
+  status: 'idle' | 'working' | 'offline';
+  registeredAt: number;
+  lastSeen: number;
+  parentId: string | null;
+  subAgents: string[];
+  currentTask: string | null;
+  result: string | null;
+}
+
+export interface WebSocketMessage {
+  type: 'state-update' | 'task-assigned' | 'task-completed' | 'heartbeat' | 'sub-agent-spawned' | 'error';
+  data: any;
+  timestamp: number;
+}
+
+export interface CallableRequest {
+  method: string;
+  args: any;
 }
 
 // ─── Task ───────────────────────────────────────────────
@@ -57,4 +90,21 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   type: 'user' | 'agent' | 'system';
+}
+
+// ─── Sub-Agent ─────────────────────────────────────────
+export interface SubAgentRequest {
+  name: string;
+  role: string;
+  capabilities: string[];
+  parentId: string;
+}
+
+export interface SubAgent {
+  id: string;
+  name: string;
+  role: string;
+  parentId: string;
+  status: 'idle' | 'working' | 'offline';
+  createdAt: number;
 }
