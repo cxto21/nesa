@@ -93,6 +93,7 @@ POST /agents/YOUR_ID/heartbeat
     <p class="subtitle">Multi-Agent Task Coordination — Nesa Example</p>
 
     <div class="links">
+      <a href="/chat">Chat</a>
       <a href="/agents">Agents</a>
       <a href="/tasks">Tasks</a>
       <a href="/status">Status (JSON)</a>

@@ -30,10 +30,11 @@ function createMockKV() {
 }
 
 describe('Coordinator', () => {
-  let env: { STATE: KVNamespace };
+  let env: { STATE: KVNamespace; LOGS: KVNamespace };
 
   beforeEach(() => {
-    env = { STATE: createMockKV() };
+    const logsKV = createMockKV();
+    env = { STATE: createMockKV(), LOGS: logsKV };
   });
 
   describe('Agent Registry', () => {

@@ -48,3 +48,13 @@ export interface CoordinatorRequest extends Request {
   agentType?: 'ai' | 'bot' | 'human';
   params?: Record<string, string>;
 }
+
+// ─── Chat ──────────────────────────────────────────────
+export interface ChatMessage {
+  id: string;
+  from: string;          // 'user' or agent name
+  to: string | null;     // agent name or null (broadcast)
+  content: string;
+  timestamp: number;
+  type: 'user' | 'agent' | 'system';
+}

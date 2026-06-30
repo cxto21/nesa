@@ -252,6 +252,97 @@ describe('Multi-Agent Coordinator API', () => {
     });
   });
 
+  describe('Chat Flow', () => {
+    it('should render chat UI', async () => {
+      const request = new Request('http://localhost/chat');
+      const ctx = createMockContext();
+      const response = await worker.fetch(request, env, ctx);
+
+      expect(response.status).toBe(200);
+      const html = await response.text();
+      expect(html).toContain('CHAT');
+      expect(html).toContain('/chat/send');
+    });
+
+    it('should send and retrieve messages', async () => {
+      // Send a message
+      const sendReq = new Request('http://localhost/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'Hello everyone' }),
+      });
+      const sendCtx = createMockContext();
+      const sendRes = await worker.fetch(sendReq, env, sendCtx);
+
+      expect(sendRes.status).toBe(200);
+      const sendBody = await sendRes.json<any>();
+      expect(sendBody.ok).toBe(true);
+
+      // Get messages
+      const msgReq = new Request('http://localhost/chat/messages');
+      const msgCtx = createMockContext();
+      const msgRes = await worker.fetch(msgReq, env, msgCtx);
+
+      expect(msgRes.status).toBe(200);
+      const msgBody = await msgRes.json<any>();
+      expect(msgBody.messages.length).toBe(1);
+      expect(msgBody.messages[0].content).toBe('Hello everyone');
+      expect(msgBody.messages[0].type).toBe('user');
+    });
+
+    it('should route @mentions to agents', async () => {
+      // Register an agent first
+      const regReq = new Request('http://localhost/agents/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'researcher-1', role: 'researcher', capabilities: ['search'] }),
+      });
+      const regCtx = createMockContext();
+      await worker.fetch(regReq, env, regCtx);
+
+      // Send @mention
+      const sendReq = new Request('http://localhost/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: '@researcher-1 research edge computing' }),
+      });
+      const sendCtx = createMockContext();
+      const sendRes = await worker.fetch(sendReq, env, sendCtx);
+      expect(sendRes.status).toBe(200);
+
+      // Should have user message + agent response
+      const msgReq = new Request('http://localhost/chat/messages');
+      const msgCtx = createMockContext();
+      const msgRes = await worker.fetch(msgReq, env, msgCtx);
+      const msgBody = await msgRes.json<any>();
+
+      expect(msgBody.messages.length).toBe(2);
+      expect(msgBody.messages[0].type).toBe('user');
+      expect(msgBody.messages[0].to).toBe('researcher-1');
+      expect(msgBody.messages[1].type).toBe('agent');
+      expect(msgBody.messages[1].from).toBe('researcher-1');
+    });
+
+    it('should notify when agent not found', async () => {
+      const sendReq = new Request('http://localhost/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: '@ghost do something' }),
+      });
+      const sendCtx = createMockContext();
+      await worker.fetch(sendReq, env, sendCtx);
+
+      const msgReq = new Request('http://localhost/chat/messages');
+      const msgCtx = createMockContext();
+      const msgRes = await worker.fetch(msgReq, env, msgCtx);
+      const msgBody = await msgRes.json<any>();
+
+      expect(msgBody.messages.length).toBe(2);
+      expect(msgBody.messages[1].type).toBe('system');
+      expect(msgBody.messages[1].content).toContain('not found');
+    });
+  });
+
   describe('404 Catch-all', () => {
     it('should return 404 for unknown routes', async () => {
       const request = new Request('http://localhost/unknown-route');

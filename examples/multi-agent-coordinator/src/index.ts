@@ -17,6 +17,7 @@ import { create, pick, result, list as listTasks, detail } from './handlers/task
 import { dashboard } from './handlers/dashboard';
 import { status } from './handlers/status';
 import { logs } from './handlers/logs';
+import { chatUI, send, messages } from './handlers/chat';
 
 // Router
 const router = Router({
@@ -33,6 +34,11 @@ router.get('/', home);
 router.get('/dashboard', dashboard);
 router.get('/status', status);
 router.get('/logs', logs);
+
+// ─── Chat ────────────────────────────────────────────────
+router.get('/chat', chatUI);
+router.get('/chat/messages', messages);
+router.post('/chat/send', send);
 
 // ─── Agents ─────────────────────────────────────────────
 router.post('/agents/register', register);
