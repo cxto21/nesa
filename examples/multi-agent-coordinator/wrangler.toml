@@ -7,7 +7,15 @@ compatibility_date = "2024-09-25"
 binding = "STATE"
 id = "nesa-coordinator-state"
 
-# For production, uncomment and set your namespace ID:
+# KV for interaction logs (falls back to STATE if not configured)
+[[kv_namespaces]]
+binding = "LOGS"
+id = "nesa-coordinator-logs"
+
+# For production, uncomment and set your namespace IDs:
 # [[kv_namespaces]]
 # binding = "STATE"
 # id = "your-kv-namespace-id"
+# [[kv_namespaces]]
+# binding = "LOGS"
+# id = "your-logs-namespace-id"

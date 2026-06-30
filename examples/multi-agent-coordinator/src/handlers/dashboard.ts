@@ -96,6 +96,7 @@ POST /agents/YOUR_ID/heartbeat
       <a href="/agents">Agents</a>
       <a href="/tasks">Tasks</a>
       <a href="/status">Status (JSON)</a>
+      <a href="/logs">Logs</a>
     </div>
 
     <div class="grid">

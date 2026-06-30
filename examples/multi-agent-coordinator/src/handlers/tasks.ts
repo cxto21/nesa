@@ -39,7 +39,8 @@ export async function create(request: CoordinatorRequest, env: Env): Promise<Res
 
 // GET /tasks/pick?role=researcher — Agent picks a task for its role
 export async function pick(request: CoordinatorRequest, env: Env): Promise<Response> {
-  const role = request.url.searchParams.get('role');
+  const url = new URL(request.url);
+  const role = url.searchParams.get('role');
   if (!role) {
     return Response.json({ error: 'Missing role query param' }, { status: 400 });
   }
@@ -51,7 +52,7 @@ export async function pick(request: CoordinatorRequest, env: Env): Promise<Respo
     for (const subtask of task.subtasks) {
       if (subtask.role === role && subtask.status === 'pending') {
         // Auto-assign to the requesting agent (we need agent id)
-        const agentId = request.url.searchParams.get('agentId');
+        const agentId = url.searchParams.get('agentId');
         if (agentId) {
           await assignSubtask(env, subtask.id, agentId);
         }

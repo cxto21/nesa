@@ -3,6 +3,7 @@
 
 export interface Env {
   STATE: KVNamespace;  // Local simulation via Miniflare
+  LOGS: KVNamespace;   // Interaction logs (falls back to STATE)
 }
 
 // ─── Agent ──────────────────────────────────────────────
@@ -45,6 +46,5 @@ export interface Task {
 // ─── Request ────────────────────────────────────────────
 export interface CoordinatorRequest extends Request {
   agentType?: 'ai' | 'bot' | 'human';
-  url: URL;
   params?: Record<string, string>;
 }
