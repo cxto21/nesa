@@ -2,13 +2,17 @@
 import type { CoordinatorRequest, Env } from '../types';
 import { getStats, getAllAgents, getAllTasks } from '../coordinator';
 
-export function status(request: CoordinatorRequest, env: Env): Response {
+export async function status(request: CoordinatorRequest, env: Env): Promise<Response> {
+  const stats = await getStats(env);
+  const agents = await getAllAgents(env);
+  const tasks = await getAllTasks(env);
+
   return Response.json({
     service: 'multi-agent-coordinator',
     version: '0.1.0',
-    stats: getStats(),
-    agents: getAllAgents(),
-    tasks: getAllTasks(),
+    stats,
+    agents,
+    tasks,
     endpoints: {
       register: 'POST /agents/register',
       listAgents: 'GET /agents',

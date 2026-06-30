@@ -11,40 +11,40 @@ import {
 } from '../coordinator';
 
 // POST /tasks/create — Create a new task with subtasks
-export function create(request: CoordinatorRequest, env: Env): Response | Promise<Response> {
-  return request.json().then((body: any) => {
-    if (!body.title || !body.description || !body.subtasks?.length) {
-      return Response.json(
-        { error: 'Missing required fields: title, description, subtasks[]' },
-        { status: 400 },
-      );
-    }
+export async function create(request: CoordinatorRequest, env: Env): Promise<Response> {
+  const body = await request.json() as any;
 
-    const task = createTask({
-      title: body.title,
-      description: body.description,
-      subtasks: body.subtasks,
-    });
+  if (!body.title || !body.description || !body.subtasks?.length) {
+    return Response.json(
+      { error: 'Missing required fields: title, description, subtasks[]' },
+      { status: 400 },
+    );
+  }
 
-    // Try to auto-assign
-    const assignments = autoAssign();
-
-    return Response.json({
-      message: 'Task created',
-      task,
-      autoAssigned: assignments.length,
-    }, { status: 201 });
+  const task = await createTask(env, {
+    title: body.title,
+    description: body.description,
+    subtasks: body.subtasks,
   });
+
+  // Try to auto-assign
+  const assignments = await autoAssign(env);
+
+  return Response.json({
+    message: 'Task created',
+    task,
+    autoAssigned: assignments.length,
+  }, { status: 201 });
 }
 
 // GET /tasks/pick?role=researcher — Agent picks a task for its role
-export function pick(request: CoordinatorRequest, env: Env): Response {
+export async function pick(request: CoordinatorRequest, env: Env): Promise<Response> {
   const role = request.url.searchParams.get('role');
   if (!role) {
     return Response.json({ error: 'Missing role query param' }, { status: 400 });
   }
 
-  const allTasks = getAllTasks();
+  const allTasks = await getAllTasks(env);
 
   // Find first pending subtask matching this role
   for (const task of allTasks) {
@@ -53,7 +53,7 @@ export function pick(request: CoordinatorRequest, env: Env): Response {
         // Auto-assign to the requesting agent (we need agent id)
         const agentId = request.url.searchParams.get('agentId');
         if (agentId) {
-          assignSubtask(subtask.id, agentId);
+          await assignSubtask(env, subtask.id, agentId);
         }
 
         return Response.json({
@@ -76,29 +76,29 @@ export function pick(request: CoordinatorRequest, env: Env): Response {
 }
 
 // POST /tasks/result — Submit result for a subtask
-export function result(request: CoordinatorRequest, env: Env): Response | Promise<Response> {
-  return request.json().then((body: any) => {
-    if (!body.subtaskId || !body.result) {
-      return Response.json(
-        { error: 'Missing required fields: subtaskId, result' },
-        { status: 400 },
-      );
-    }
+export async function result(request: CoordinatorRequest, env: Env): Promise<Response> {
+  const body = await request.json() as any;
 
-    const ok = submitResult(body.subtaskId, body.result);
+  if (!body.subtaskId || !body.result) {
+    return Response.json(
+      { error: 'Missing required fields: subtaskId, result' },
+      { status: 400 },
+    );
+  }
 
-    if (!ok) {
-      return Response.json({ error: 'Subtask not found or not assignable' }, { status: 404 });
-    }
+  const ok = await submitResult(env, body.subtaskId, body.result);
 
-    return Response.json({ message: 'Result submitted', subtaskId: body.subtaskId });
-  });
+  if (!ok) {
+    return Response.json({ error: 'Subtask not found or not assignable' }, { status: 404 });
+  }
+
+  return Response.json({ message: 'Result submitted', subtaskId: body.subtaskId });
 }
 
 // GET /tasks — List all tasks
-export function list(request: CoordinatorRequest, env: Env): Response {
-  const allTasks = getAllTasks();
-  const stats = getStats();
+export async function list(request: CoordinatorRequest, env: Env): Promise<Response> {
+  const allTasks = await getAllTasks(env);
+  const stats = await getStats(env);
 
   if (request.agentType === 'ai') {
     return Response.json({ tasks: allTasks, stats });
@@ -150,13 +150,13 @@ export function list(request: CoordinatorRequest, env: Env): Response {
 }
 
 // GET /tasks/:id — Task detail
-export function detail(request: CoordinatorRequest, env: Env): Response {
+export async function detail(request: CoordinatorRequest, env: Env): Promise<Response> {
   const id = request.params?.id;
   if (!id) {
     return Response.json({ error: 'Missing task id' }, { status: 400 });
   }
 
-  const task = getTask(id);
+  const task = await getTask(env, id);
   if (!task) {
     return Response.json({ error: 'Task not found' }, { status: 404 });
   }

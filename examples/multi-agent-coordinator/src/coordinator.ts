@@ -1,19 +1,32 @@
 // Coordinator Core — Agent Registry + Task Engine
-// In-memory state (per-isolate). For production: use Durable Objects or KV.
+// Uses KV for persistent state (survives cold starts locally and in production)
 
-import type { Agent, Task, Subtask } from './types';
+import type { Agent, Task, Subtask, Env } from './types';
 
-// ─── State (in-memory, resets on cold start) ────────────
-const agents = new Map<string, Agent>();
-const tasks = new Map<string, Task>();
+// ─── KV Keys ──────────────────────────────────────────────
+const AGENTS_KEY = 'agents';
+const TASKS_KEY = 'tasks';
 
-// ─── Agent Registry ─────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────
+async function loadMap<T>(env: Env, key: string): Promise<Map<string, T>> {
+  const data = await env.STATE.get(key, 'json');
+  if (!data) return new Map();
+  return new Map(Object.entries(data as Record<string, T>));
+}
 
-export function registerAgent(data: {
+async function saveMap<T>(env: Env, key: string, map: Map<string, T>): Promise<void> {
+  const obj = Object.fromEntries(map);
+  await env.STATE.put(key, JSON.stringify(obj));
+}
+
+// ─── Agent Registry ───────────────────────────────────────
+
+export async function registerAgent(env: Env, data: {
   name: string;
   role: string;
   capabilities: string[];
-}): Agent {
+}): Promise<Agent> {
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
   const id = crypto.randomUUID();
   const now = Date.now();
 
@@ -28,38 +41,45 @@ export function registerAgent(data: {
   };
 
   agents.set(id, agent);
+  await saveMap(env, AGENTS_KEY, agents);
   return agent;
 }
 
-export function getAgent(id: string): Agent | undefined {
+export async function getAgent(env: Env, id: string): Promise<Agent | undefined> {
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
   return agents.get(id);
 }
 
-export function getAgentsByRole(role: string): Agent[] {
+export async function getAgentsByRole(env: Env, role: string): Promise<Agent[]> {
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
   return Array.from(agents.values()).filter(
     a => a.role === role && a.status === 'idle',
   );
 }
 
-export function getAllAgents(): Agent[] {
+export async function getAllAgents(env: Env): Promise<Agent[]> {
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
   return Array.from(agents.values());
 }
 
-export function updateAgentStatus(id: string, status: Agent['status']): void {
+export async function updateAgentStatus(env: Env, id: string, status: Agent['status']): Promise<void> {
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
   const agent = agents.get(id);
   if (agent) {
     agent.status = status;
     agent.lastSeen = Date.now();
+    await saveMap(env, AGENTS_KEY, agents);
   }
 }
 
-// ─── Task Engine ────────────────────────────────────────
+// ─── Task Engine ──────────────────────────────────────────
 
-export function createTask(data: {
+export async function createTask(env: Env, data: {
   title: string;
   description: string;
   subtasks: Array<{ role: string; description: string }>;
-}): Task {
+}): Promise<Task> {
+  const tasks = await loadMap<Task>(env, TASKS_KEY);
   const id = crypto.randomUUID();
   const now = Date.now();
 
@@ -87,19 +107,25 @@ export function createTask(data: {
   };
 
   tasks.set(id, task);
+  await saveMap(env, TASKS_KEY, tasks);
   return task;
 }
 
-export function getTask(id: string): Task | undefined {
+export async function getTask(env: Env, id: string): Promise<Task | undefined> {
+  const tasks = await loadMap<Task>(env, TASKS_KEY);
   return tasks.get(id);
 }
 
-export function getAllTasks(): Task[] {
+export async function getAllTasks(env: Env): Promise<Task[]> {
+  const tasks = await loadMap<Task>(env, TASKS_KEY);
   return Array.from(tasks.values());
 }
 
 // Assign a subtask to an agent
-export function assignSubtask(subtaskId: string, agentId: string): boolean {
+export async function assignSubtask(env: Env, subtaskId: string, agentId: string): Promise<boolean> {
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
+  const tasks = await loadMap<Task>(env, TASKS_KEY);
+
   const agent = agents.get(agentId);
   if (!agent || agent.status !== 'idle') return false;
 
@@ -110,6 +136,9 @@ export function assignSubtask(subtaskId: string, agentId: string): boolean {
       subtask.status = 'assigned';
       agent.status = 'working';
       task.status = 'assigned';
+
+      await saveMap(env, AGENTS_KEY, agents);
+      await saveMap(env, TASKS_KEY, tasks);
       return true;
     }
   }
@@ -117,7 +146,10 @@ export function assignSubtask(subtaskId: string, agentId: string): boolean {
 }
 
 // Submit result for a subtask
-export function submitResult(subtaskId: string, result: string): boolean {
+export async function submitResult(env: Env, subtaskId: string, result: string): Promise<boolean> {
+  const tasks = await loadMap<Task>(env, TASKS_KEY);
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
+
   for (const task of tasks.values()) {
     const subtask = task.subtasks.find(st => st.id === subtaskId);
     if (subtask && (subtask.status === 'assigned' || subtask.status === 'in-progress')) {
@@ -127,7 +159,11 @@ export function submitResult(subtaskId: string, result: string): boolean {
 
       // Free the agent
       if (subtask.assignedTo) {
-        updateAgentStatus(subtask.assignedTo, 'idle');
+        const agent = agents.get(subtask.assignedTo);
+        if (agent) {
+          agent.status = 'idle';
+          agent.lastSeen = Date.now();
+        }
       }
 
       // Check if all subtasks are done
@@ -140,6 +176,8 @@ export function submitResult(subtaskId: string, result: string): boolean {
           .join('\n\n');
       }
 
+      await saveMap(env, TASKS_KEY, tasks);
+      await saveMap(env, AGENTS_KEY, agents);
       return true;
     }
   }
@@ -147,7 +185,9 @@ export function submitResult(subtaskId: string, result: string): boolean {
 }
 
 // Auto-assign pending subtasks to available agents
-export function autoAssign(): Array<{ subtask: Subtask; agent: Agent }> {
+export async function autoAssign(env: Env): Promise<Array<{ subtask: Subtask; agent: Agent }>> {
+  const agents = await loadMap<Agent>(env, AGENTS_KEY);
+  const tasks = await loadMap<Task>(env, TASKS_KEY);
   const assignments: Array<{ subtask: Subtask; agent: Agent }> = [];
 
   for (const task of tasks.values()) {
@@ -156,7 +196,10 @@ export function autoAssign(): Array<{ subtask: Subtask; agent: Agent }> {
     for (const subtask of task.subtasks) {
       if (subtask.status !== 'pending') continue;
 
-      const available = getAgentsByRole(subtask.role);
+      const available = Array.from(agents.values()).filter(
+        a => a.role === subtask.role && a.status === 'idle',
+      );
+
       if (available.length > 0) {
         const agent = available[0];
         subtask.assignedTo = agent.id;
@@ -168,14 +211,19 @@ export function autoAssign(): Array<{ subtask: Subtask; agent: Agent }> {
     }
   }
 
+  if (assignments.length > 0) {
+    await saveMap(env, AGENTS_KEY, agents);
+    await saveMap(env, TASKS_KEY, tasks);
+  }
+
   return assignments;
 }
 
-// ─── Stats ──────────────────────────────────────────────
+// ─── Stats ────────────────────────────────────────────────
 
-export function getStats() {
-  const allAgents = getAllAgents();
-  const allTasks = getAllTasks();
+export async function getStats(env: Env) {
+  const allAgents = await getAllAgents(env);
+  const allTasks = await getAllTasks(env);
 
   return {
     agents: {

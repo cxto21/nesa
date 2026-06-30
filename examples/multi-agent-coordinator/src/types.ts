@@ -2,9 +2,7 @@
 // Inspired by Parina: explicit, no magic, linear flow
 
 export interface Env {
-  // For production: use Durable Objects or KV for state
-  // COORDINATOR: DurableObjectNamespace;
-  // STATE: KVNamespace;
+  STATE: KVNamespace;  // Local simulation via Miniflare
 }
 
 // ─── Agent ──────────────────────────────────────────────

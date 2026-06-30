@@ -2,13 +2,12 @@ name = "nesa-coordinator"
 main = "src/index.ts"
 compatibility_date = "2024-09-25"
 
-# For production, uncomment and configure:
-# [kv_namespaces]
+# KV for persistent state (local simulation via Miniflare)
+[[kv_namespaces]]
+binding = "STATE"
+id = "nesa-coordinator-state"
+
+# For production, uncomment and set your namespace ID:
+# [[kv_namespaces]]
 # binding = "STATE"
 # id = "your-kv-namespace-id"
-
-# [durable_objects]
-# bindings = [{ name = "COORDINATOR", class_name = "Coordinator" }]
-
-# [vars]
-# ENVIRONMENT = "production"

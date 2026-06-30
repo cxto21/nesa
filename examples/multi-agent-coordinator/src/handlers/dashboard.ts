@@ -2,10 +2,10 @@
 import type { CoordinatorRequest, Env } from '../types';
 import { getStats, getAllAgents, getAllTasks } from '../coordinator';
 
-export function dashboard(request: CoordinatorRequest, env: Env): Response {
-  const stats = getStats();
-  const agents = getAllAgents();
-  const tasks = getAllTasks();
+export async function dashboard(request: CoordinatorRequest, env: Env): Promise<Response> {
+  const stats = await getStats(env);
+  const agents = await getAllAgents(env);
+  const tasks = await getAllTasks(env);
 
   // Agent cards
   const agentCards = agents.slice(0, 10).map(a => `

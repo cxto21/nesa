@@ -8,36 +8,36 @@ import {
 } from '../coordinator';
 
 // POST /agents/register — Register a new agent
-export function register(request: CoordinatorRequest, env: Env): Response | Promise<Response> {
-  return request.json().then((body: any) => {
-    if (!body.name || !body.role) {
-      return Response.json(
-        { error: 'Missing required fields: name, role' },
-        { status: 400 },
-      );
-    }
+export async function register(request: CoordinatorRequest, env: Env): Promise<Response> {
+  const body = await request.json() as any;
 
-    const agent = registerAgent({
-      name: body.name,
-      role: body.role,
-      capabilities: body.capabilities ?? [],
-    });
+  if (!body.name || !body.role) {
+    return Response.json(
+      { error: 'Missing required fields: name, role' },
+      { status: 400 },
+    );
+  }
 
-    return Response.json({
-      message: 'Agent registered',
-      agent,
-      instructions: {
-        pickTask: `GET /tasks/pick?role=${agent.role}`,
-        submitResult: `POST /tasks/result`,
-        heartbeat: `POST /agents/${agent.id}/heartbeat`,
-      },
-    }, { status: 201 });
+  const agent = await registerAgent(env, {
+    name: body.name,
+    role: body.role,
+    capabilities: body.capabilities ?? [],
   });
+
+  return Response.json({
+    message: 'Agent registered',
+    agent,
+    instructions: {
+      pickTask: `GET /tasks/pick?role=${agent.role}`,
+      submitResult: `POST /tasks/result`,
+      heartbeat: `POST /agents/${agent.id}/heartbeat`,
+    },
+  }, { status: 201 });
 }
 
 // GET /agents — List all agents
-export function list(request: CoordinatorRequest, env: Env): Response {
-  const allAgents = getAllAgents();
+export async function list(request: CoordinatorRequest, env: Env): Promise<Response> {
+  const allAgents = await getAllAgents(env);
 
   if (request.agentType === 'ai') {
     return Response.json({
@@ -85,18 +85,18 @@ export function list(request: CoordinatorRequest, env: Env): Response {
 }
 
 // POST /agents/:id/heartbeat — Agent heartbeat
-export function heartbeat(request: CoordinatorRequest, env: Env): Response {
+export async function heartbeat(request: CoordinatorRequest, env: Env): Promise<Response> {
   const id = request.params?.id;
   if (!id) {
     return Response.json({ error: 'Missing agent id' }, { status: 400 });
   }
 
-  const agent = getAgent(id);
+  const agent = await getAgent(env, id);
   if (!agent) {
     return Response.json({ error: 'Agent not found' }, { status: 404 });
   }
 
-  updateAgentStatus(id, agent.status);
+  await updateAgentStatus(env, id, agent.status);
   return Response.json({ ok: true, status: agent.status });
 }
 
