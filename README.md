@@ -101,7 +101,7 @@ export default { fetch: router.fetch.bind(router) };
 
 ## Skills
 
-9 minimal skills in `/skills/` — guides, not code:
+10 minimal skills in `/skills/` — guides, not code:
 
 | Skill | Description |
 |-------|-------------|
@@ -114,6 +114,7 @@ export default { fetch: router.fetch.bind(router) };
 | `devops` | Testing + deployment |
 | `static-assets` | Serve static files |
 | `queues` | Race condition prevention via Cloudflare Queues |
+| `agent-discoverability` | robots.txt + llms.txt + sitemap for agent discovery |
 
 ---
 
