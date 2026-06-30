@@ -10,6 +10,8 @@ import { health } from './handlers/health';
 import { agentInfo } from './handlers/agent';
 import { agentTools } from './handlers/agent-tools';
 import { robots } from './handlers/robots';
+import { llms } from './handlers/llms';
+import { sitemap } from './handlers/sitemap';
 
 // Create router with Parina's philosophy:
 // Explicit routes, no magic, linear flow
@@ -34,6 +36,8 @@ const router = Router({
 router.get('/', home);
 router.get('/health', health);
 router.get('/robots.txt', robots);
+router.get('/llms.txt', llms);
+router.get('/sitemap.xml', sitemap);
 
 // ─── Agent Routes ──────────────────────────────────────────
 router.get('/agent/info', agentInfo);

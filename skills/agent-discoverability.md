@@ -1,15 +1,12 @@
 # Skill: agent-discoverability
 
-Make your Nesa service findable by AI agents. robots.txt + llms.txt + sitemap + structured data.
+Make your Nesa service findable by AI agents. Built-in handlers: `robots`, `llms`, `sitemap`.
 
 ```ts
-// robots.txt: AI bot rules + sitemap directive
-// llms.txt: service description for agents (markdown)
-// sitemap.xml: endpoint discovery
-// Structured data: JSON-LD Service schema
-router.get('/robots.txt', robots);
-router.get('/llms.txt', llms);
-router.get('/sitemap.xml', sitemap);
+// Routes are registered by default in the core router:
+router.get('/robots.txt', robots);    // Bot rules + sitemap directive
+router.get('/llms.txt', llms);        // Service description for agents
+router.get('/sitemap.xml', sitemap);  // Endpoint discovery
 ```
 
-Priority: robots.txt (easy win) → llms.txt (agent understanding) → sitemap (discovery) → structured data (entity recognition). See isitagentready.com for scoring. Google ignores llms.txt but other agents use it.
+Priority: robots.txt (easy win) → llms.txt (agent understanding) → sitemap (discovery). See isitagentready.com for scoring. Google ignores llms.txt but other agents (Perplexity, Claude, ChatGPT) use it.
