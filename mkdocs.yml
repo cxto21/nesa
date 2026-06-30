@@ -1,0 +1,100 @@
+site_name: Bugeisha
+site_description: Ultra-light agent-native micro-framework for Cloudflare Workers
+site_url: https://bugeisha.dev
+repo_url: https://github.com/cxto21/bugeisha
+repo_name: cxto21/bugeisha
+
+theme:
+  name: material
+  logo: assets/images/mamuzhka.svg
+  favicon: assets/images/mamuzhka.svg
+  language: en
+  palette:
+    - scheme: default
+      primary: black
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Project Structure: getting-started/project-structure.md
+  - Concepts:
+    - Agent-Native: concepts/agent-native.md
+    - Dual Response: concepts/dual-response.md
+    - Discoverability: concepts/discoverability.md
+  - Middleware:
+    - Auth: middleware/auth.md
+    - CORS: middleware/cors.md
+    - Rate Limit: middleware/rate-limit.md
+    - Agent Detect: middleware/agent-detect.md
+  - Handlers:
+    - Home: handlers/home.md
+    - Health: handlers/health.md
+    - Agent Tools: handlers/agent-tools.md
+  - Examples:
+    - Multi-Agent Coordinator: examples/multi-agent-coordinator.md
+    - Workers AI: examples/workers-ai.md
+    - Sandbox: examples/sandbox.md
+  - Skills: skills/index.md
+  - API Reference:
+    - Types: api-reference/types.md
+  - Contributing: contributing.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/cxto21/bugeisha
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/bugeisha_dev
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
