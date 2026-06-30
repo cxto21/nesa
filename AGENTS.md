@@ -1,99 +1,72 @@
-# AGENTS.md — Bugeisha Framework
+# AGENTS.md — Bugeisha 🪆
 
-Agent-native micro-framework for Cloudflare Workers. Ultra-light, explicit routes, no magic.
+Ultra-light agent-native micro-framework for Cloudflare Workers. ~200 LOC. TypeScript + Itty Router v5.
 
-## Project Overview
+## Qué hace
 
-Bugeisha is a minimal framework for building APIs that serve both humans and AI agents. Same routes, different responses: JSON for agents, HTML for humans.
+APIs que sirven a dos públicos: **humanos** (HTML) y **agentes IA** (JSON). Misma ruta, distinta respuesta. Sin magia, sin decoradores.
 
-**Stack**: TypeScript, Itty Router v5, Cloudflare Workers
-** Philosophy**: Extreme minimalism. Explicit routes. No magic. Linear flow.
-
-## Setup Commands
+## Cómo levantarlo
 
 ```bash
-npm install          # Install dependencies
-npm run dev          # Start local dev server (wrangler)
-npm run deploy       # Deploy to Cloudflare Workers
-npm test             # Run tests with Vitest
-npm run test:watch   # Run tests in watch mode
+npm install
+npm run dev        # localhost:8787
+npm test           # 26 tests (vitest)
 ```
 
-## Code Style
-
-- TypeScript strict mode
-- Explicit route registration (no decorators, no magic)
-- Middleware returns `Response` to stop, `void` to continue
-- Always bind `fetch` to router: `export default { fetch: router.fetch.bind(router) }`
-- Use `BugeishaRequest` type for request objects with `isAgent` flag
-- Handlers receive `(request, env)` — keep them pure when possible
-
-## Testing Instructions
-
-```bash
-npm test             # Run all tests
-npm run test:watch   # Watch mode
-```
-
-- Test handlers as pure functions
-- Mock `env` and `ctx` for unit tests
-- Use Vitest with Cloudflare Workers pool
-- Verify both agent (JSON) and human (HTML) responses
-
-## Project Structure
+## Dónde está cada cosa
 
 ```
 src/
-├── index.ts              # Entry point + exports
-├── router.ts             # Core router with middleware pipeline
-├── types.ts              # Env, BugeishaRequest, BugeishaHandler types
-├── middleware/
-│   ├── agent-detect.ts   # AI/bot/human detection
-│   ├── cors.ts           # CORS preflight handling
-│   ├── auth.ts           # Bearer token authentication
-│   └── rate-limit.ts     # In-memory rate limiting
-└── handlers/
-    ├── home.ts           # Home (dual response)
-    ├── health.ts         # Health check
-    ├── agent.ts          # Agent info endpoint
-    ├── agent-tools.ts    # Tool definitions for function calling
-    ├── robots.ts         # Agent-aware robots.txt
-    ├── llms.ts           # Service description for agents
-    └── sitemap.ts        # XML sitemap for discovery
+├── index.ts          # Entry point + exports
+├── router.ts         # createBugeisha() + middleware pipeline
+├── types.ts          # Env, BugeishaRequest, BugeishaHandler
+├── middleware/        # agent-detect, auth, cors, rate-limit
+└── handlers/         # home, health, agent, agent-tools, robots, llms, sitemap
+
+examples/
+└── multi-agent-coordinator/   # Ejemplo completo con DO + WebSocket
+
+skills/               # Guías, no código (14 skills)
 ```
 
-## Skills
+## Reglas de estilo
 
-Skills are in `skills/` as folders with `SKILL.md` + optional scripts/assets. Each skill follows AgentSkills.io standard:
+- TypeScript strict mode
+- Rutas explícitas (no decoradores, no magia)
+- Middleware retorna `Response` para parar, `void` para continuar
+- Siempre bind: `export default { fetch: router.fetch.bind(router) }`
+- Handlers puros: `(request, env) => Response`
+- Nada que no sea Itty Router como dependencia core
+
+## Archivos que nunca modificar
+
+- `src/router.ts` — Lógica central del framework
+- `src/types.ts` — Tipos compartidos
+- `wrangler.toml` — Config de Cloudflare Workers
+- `package.json` — Dependencias
+
+## Cómo ejecutar tests
 
 ```bash
-ls skills/
-# core/  security/  agent-native/  storage/  devex/
-# devops/  static-assets/  queues/  protocols/  agent-discoverability/
+npm test                    # Todos
+npm run test:watch          # Watch mode
+npm test -- middleware       # Solo middleware
+npm test -- handlers        # Solo handlers
 ```
 
-To use a skill: read `skills/<name>/SKILL.md` for instructions.
+Tests usan mocks inline ligeros. No instalar dependencias extras para testear.
 
-## Agent-Native Patterns
+## Qué documentación leer primero
 
-- **Agent detection**: Check User-Agent for AI patterns (openai, gpt, claude, anthropic)
-- **Dual responses**: Same route returns JSON for agents, HTML for humans
-- **Tool definitions**: `/agent/tools` returns OpenAI-compatible function calling format
-- **Discoverability**: `/robots.txt`, `/llms.txt`, `/sitemap.xml` for agent discovery
-
-## Deployment
-
-```bash
-npm run deploy              # Deploy to production
-wrangler deploy --env staging  # Deploy to staging
-wrangler secret put API_KEY    # Add secrets
-wrangler tail                 # Live logs
-```
+1. **este archivo** — visión general
+2. `docs/architecture.md` — cómo funciona internamente
+3. `docs/conventions.md` — naming, estructura, patrones
+4. `src/types.ts` — tipos disponibles
 
 ## Gotchas
 
-- Always bind `fetch` to router — forgetting `.bind(router)` causes `this` context loss
-- Rate limit is per-isolate — use KV/D1 for distributed rate limiting in production
-- KV is eventually consistent (~60s propagation) — D1 for strong consistency
-- Agent detection is best-effort — agents can spoof User-Agent
-- `error()` from itty-router returns a Response, not throws — no try/catch needed
+- `request.url` es string, no URL — usar `new URL(request.url)` para searchParams
+- Rate limit es por-isolate — usar KV/D1 para producción
+- Agent detection es best-effort — agentes pueden spoofear User-Agent
+- KV es eventualmente consistente (~60s) — D1 para consistencia fuerte
