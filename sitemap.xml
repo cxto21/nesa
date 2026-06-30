@@ -5,7 +5,19 @@
          <lastmod>2026-06-30</lastmod>
     </url>
     <url>
+         <loc>https://bugeisha.dev/architecture/</loc>
+         <lastmod>2026-06-30</lastmod>
+    </url>
+    <url>
          <loc>https://bugeisha.dev/contributing/</loc>
+         <lastmod>2026-06-30</lastmod>
+    </url>
+    <url>
+         <loc>https://bugeisha.dev/conventions/</loc>
+         <lastmod>2026-06-30</lastmod>
+    </url>
+    <url>
+         <loc>https://bugeisha.dev/roadmap/</loc>
          <lastmod>2026-06-30</lastmod>
     </url>
     <url>
@@ -22,6 +34,10 @@
     </url>
     <url>
          <loc>https://bugeisha.dev/concepts/dual-response/</loc>
+         <lastmod>2026-06-30</lastmod>
+    </url>
+    <url>
+         <loc>https://bugeisha.dev/decisions/</loc>
          <lastmod>2026-06-30</lastmod>
     </url>
     <url>
