@@ -1,11 +1,11 @@
-# Bugeisha 🪆
+# Bugeisha 🥷
 
 **Ultra-light agent-native micro-framework for Cloudflare Workers.**
 
 *Inspired by Parina PHP. Built fresh for the edge.*
 
 <p align="center" style="margin: 1.5rem 0;">
-  <img src="assets/images/mamuzhka.svg" alt="Bugeisha Mamuzhka" width="120" height="120" />
+  <img src="assets/images/mamuzhka.svg" alt="Bugeisha Ninja" width="120" height="120" />
 </p>
 
 ---

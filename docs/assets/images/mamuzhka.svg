@@ -1,46 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="body" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ff6b6b"/>
-      <stop offset="100%" style="stop-color:#c0392b"/>
+    <linearGradient id="suit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2c3e50"/>
+      <stop offset="100%" style="stop-color:#1a252f"/>
     </linearGradient>
-    <linearGradient id="dress" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3498db"/>
-      <stop offset="100%" style="stop-color:#2980b9"/>
-    </linearGradient>
-    <linearGradient id="apron" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="scarf" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#e74c3c"/>
       <stop offset="100%" style="stop-color:#c0392b"/>
     </linearGradient>
+    <linearGradient id="blade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ecf0f1"/>
+      <stop offset="50%" style="stop-color:#bdc3c7"/>
+      <stop offset="100%" style="stop-color:#95a5a6"/>
+    </linearGradient>
   </defs>
-  <!-- Head / headscarf -->
-  <ellipse cx="32" cy="14" rx="12" ry="10" fill="url(#body)"/>
-  <ellipse cx="32" cy="12" rx="11" ry="7" fill="#e74c3c"/>
-  <ellipse cx="32" cy="11" rx="9" ry="5" fill="#ff6b6b"/>
-  <!-- Face -->
-  <ellipse cx="32" cy="18" rx="8" ry="7" fill="#fdebd0"/>
-  <!-- Eyes -->
-  <circle cx="29" cy="17" r="1.5" fill="#2c3e50"/>
-  <circle cx="35" cy="17" r="1.5" fill="#2c3e50"/>
-  <!-- Smile -->
-  <path d="M 29 20 Q 32 22 35 20" stroke="#2c3e50" stroke-width="1" fill="none"/>
-  <!-- Rosy cheeks -->
-  <circle cx="27" cy="19" r="1.5" fill="#ff6b6b" opacity="0.6"/>
-  <circle cx="37" cy="19" r="1.5" fill="#ff6b6b" opacity="0.6"/>
-  <!-- Neck -->
-  <rect x="30" y="24" width="4" height="3" fill="#fdebd0"/>
-  <!-- Body / dress -->
-  <path d="M 20 27 C 20 27, 14 35, 14 48 Q 14 54, 20 56 L 44 56 Q 50 54, 50 48 C 50 35, 44 27, 44 27 Z" fill="url(#dress)"/>
-  <!-- Apron -->
-  <path d="M 24 27 L 24 52 Q 24 54, 26 54 L 38 54 Q 40 54, 40 52 L 40 27 Z" fill="url(#apron)"/>
-  <!-- Apron flowers -->
-  <circle cx="32" cy="34" r="2" fill="#f39c12"/>
-  <circle cx="32" cy="42" r="2" fill="#f39c12"/>
-  <circle cx="28" cy="38" r="1.5" fill="#27ae60"/>
-  <circle cx="36" cy="38" r="1.5" fill="#27ae60"/>
-  <!-- Hands -->
-  <ellipse cx="18" cy="40" rx="4" ry="3" fill="#fdebd0"/>
-  <ellipse cx="46" cy="40" rx="4" ry="3" fill="#fdebd0"/>
-  <!-- Inner matryoshka outline hint -->
-  <ellipse cx="32" cy="40" rx="4" ry="5" fill="none" stroke="#f39c12" stroke-width="0.8" opacity="0.5"/>
+  <!-- Head wrap -->
+  <ellipse cx="32" cy="22" rx="18" ry="16" fill="url(#suit)"/>
+  <!-- Scarf tail flowing right -->
+  <path d="M 44 22 Q 52 20, 56 26 Q 58 30, 54 32 Q 50 34, 48 30" fill="url(#scarf)"/>
+  <!-- Scarf tail flowing left -->
+  <path d="M 20 22 Q 12 20, 8 26 Q 6 30, 10 32 Q 14 34, 16 30" fill="url(#scarf)"/>
+  <!-- Eyes - white with intensity -->
+  <ellipse cx="26" cy="22" rx="4" ry="3" fill="white"/>
+  <ellipse cx="38" cy="22" rx="4" ry="3" fill="white"/>
+  <!-- Pupils - focused -->
+  <circle cx="26" cy="22" r="1.8" fill="#2c3e50"/>
+  <circle cx="38" cy="22" r="1.8" fill="#2c3e50"/>
+  <!-- Eye highlights -->
+  <circle cx="25" cy="21" r="0.7" fill="white"/>
+  <circle cx="37" cy="21" r="0.7" fill="white"/>
+  <!-- Scarf knot -->
+  <circle cx="32" cy="28" r="3" fill="url(#scarf)"/>
+  <!-- Body -->
+  <path d="M 22 32 C 22 32, 18 42, 18 52 Q 18 58, 24 60 L 40 60 Q 46 58, 46 52 C 46 42, 42 32, 42 32 Z" fill="url(#suit)"/>
+  <!-- Belt -->
+  <rect x="22" y="40" width="20" height="4" rx="1" fill="url(#scarf)"/>
+  <!-- Arms -->
+  <path d="M 18 36 L 10 44 L 12 46 L 20 40" fill="url(#suit)"/>
+  <path d="M 46 36 L 54 44 L 52 46 L 44 40" fill="url(#suit)"/>
+  <!-- Hands holding kunai -->
+  <circle cx="10" cy="44" r="2.5" fill="#fdebd0"/>
+  <circle cx="54" cy="44" r="2.5" fill="#fdebd0"/>
+  <!-- Kunai (throwing knife) -->
+  <path d="M 54 42 L 62 38 L 60 44 Z" fill="url(#blade)"/>
+  <rect x="53" y="43" width="2" height="6" rx="0.5" fill="#7f8c8d"/>
+  <!-- Shuriken on belt -->
+  <circle cx="32" cy="42" r="2" fill="url(#blade)"/>
+  <line x1="32" y1="40" x2="32" y2="44" stroke="#95a5a6" stroke-width="0.5"/>
+  <line x1="30" y1="42" x2="34" y2="42" stroke="#95a5a6" stroke-width="0.5"/>
 </svg>
